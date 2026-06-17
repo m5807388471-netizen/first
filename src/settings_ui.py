@@ -41,10 +41,10 @@ class SettingsApp:
         self._build_ui()
         self._load_config()
 
-    def _mk_entry(self, parent, textvariable, placeholder="", width=400, show="", **kwargs):
+    def _mk_entry(self, parent, textvariable, placeholder_text="", width=400, show="", **kwargs):
         """创建带剪贴板支持的输入框"""
         entry = ctk.CTkEntry(parent, textvariable=textvariable,
-                             placeholder_text=placeholder, width=width, show=show, **kwargs)
+                             placeholder_text=placeholder_text, width=width, show=show, **kwargs)
         entry.bind("<Control-c>", lambda e: entry.event_generate("<<Copy>>"))
         entry.bind("<Control-v>", lambda e: entry.event_generate("<<Paste>>"))
         entry.bind("<Control-x>", lambda e: entry.event_generate("<<Cut>>"))
