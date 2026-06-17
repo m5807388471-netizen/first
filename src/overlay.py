@@ -1,120 +1,115 @@
 """
 虚线框叠加层 — 透明窗口显示鼠标为中心的截图区域。
+使用 tkinter Toplevel 实现，与主窗口共享事件循环。
 """
 import tkinter as tk
-import threading
 
 
 class CaptureOverlay:
-    """显示一个半透明虚线矩形，标识当前截图区域（鼠标为中心）。"""
+    """一个绿色虚线矩形窗口，始终跟随鼠标，标识当前截图区域。"""
 
-    def __init__(self, width: int = 400, height: int = 300):
+    def __init__(self, parent_root: tk.Tk, width: int = 600, height: int = 400):
         self.width = width
         self.height = height
-        self._running = False
-        self._thread = None
-        self._root = None
-        self._canvas = None
-        self._dash_offset = 0  # 虚线滚动动画
+        self._active = False
+        self._parent = parent_root
+        self._win: tk.Toplevel = None
+        self._canvas: tk.Canvas = None
+        self._dash_offset = 0
+        self._job_id = None
 
     def start(self):
-        """启动叠加层窗口（独立线程）"""
-        if self._running:
+        """显示叠加层"""
+        if self._active:
             return
-        self._running = True
-        self._thread = threading.Thread(target=self._run, daemon=True)
-        self._thread.start()
-
-    def stop(self):
-        """停止叠加层"""
-        self._running = False
-        if self._root:
-            try:
-                self._root.after(0, self._root.destroy)
-            except Exception:
-                pass
-
-    def set_size(self, width: int, height: int):
-        """更新矩形尺寸"""
-        self.width = width
-        self.height = height
-
-    def _run(self):
-        """叠加层主循环"""
-        self._root = tk.Tk()
-        self._root.title("截图区域")
-        self._root.overrideredirect(True)       # 无标题栏
-        self._root.attributes('-topmost', True)  # 置顶
-        self._root.attributes('-alpha', 0.55)    # 半透明
-        self._root.configure(bg='black')
-
-        # 让窗口不对鼠标事件做反应（点击穿透）
-        try:
-            self._root.attributes('-transparentcolor', 'black')
-        except Exception:
-            pass  # 某些系统不支持，降级使用alpha
-
-        # 初始位置
-        geo = f"{self.width + 4}x{self.height + 4}+0+0"
-        self._root.geometry(geo)
-
-        # Canvas画虚线框
-        self._canvas = tk.Canvas(
-            self._root, width=self.width + 4, height=self.height + 4,
-            bg='black', highlightthickness=0, bd=0,
-        )
-        self._canvas.pack(fill="both", expand=True)
-
+        self._active = True
+        self._create_window()
         self._update_loop()
 
-    def _update_loop(self):
-        """持续更新虚线框位置（以鼠标为中心）"""
-        if not self._running or not self._root:
+    def stop(self):
+        """隐藏叠加层"""
+        self._active = False
+        if self._job_id:
+            self._parent.after_cancel(self._job_id)
+            self._job_id = None
+        if self._win:
+            try:
+                self._win.destroy()
+            except Exception:
+                pass
+            self._win = None
+
+    def set_size(self, width: int, height: int):
+        """更新矩形尺寸（即时生效）"""
+        self.width = width
+        self.height = height
+        if self._active:
+            self._parent.after(0, self._refresh_now)
+
+    def _create_window(self):
+        """创建透明置顶窗口"""
+        if self._win:
             return
+        self._win = tk.Toplevel(self._parent)
+        self._win.overrideredirect(True)
+        self._win.attributes('-topmost', True)
+        self._win.attributes('-alpha', 0.6)
+        # 设置透明色：背景用纯黑，然后让黑色变为透明
+        self._win.configure(bg='#010101')
+        self._win.attributes('-transparentcolor', '#010101')
 
+        self._canvas = tk.Canvas(
+            self._win, width=self.width + 6, height=self.height + 6,
+            bg='#010101', highlightthickness=0,
+        )
+        self._canvas.pack()
+
+    def _refresh_now(self):
+        """立即刷新一次位置和绘制"""
         try:
-            # 获取鼠标位置
-            import pyautogui
-            mx, my = pyautogui.position()
-
-            # 计算矩形左上角
-            left = mx - self.width // 2
-            top = my - self.height // 2
-
-            # 更新窗口位置
-            self._root.geometry(f"{self.width + 4}x{self.height + 4}+{left - 2}+{top - 2}")
-
-            # 画虚线矩形
-            self._canvas.delete("all")
-            # 滚动虚线效果
-            self._dash_offset = (self._dash_offset + 1) % 12
-            self._canvas.create_rectangle(
-                2, 2, self.width + 2, self.height + 2,
-                outline='#00ff00', width=2,
-                dash=(8, 4),
-                dashoffset=self._dash_offset,
-            )
-            # 四角小标记
-            size = 10
-            for cx, cy in [(2, 2), (self.width + 2, 2),
-                           (2, self.height + 2), (self.width + 2, self.height + 2)]:
-                self._canvas.create_line(
-                    cx, cy + size, cx, cy - size,
-                    fill='#00ff00', width=1,
-                )
-                self._canvas.create_line(
-                    cx - size, cy, cx + size, cy,
-                    fill='#00ff00', width=1,
-                )
-
-            self._root.update()
-
+            self._draw_frame()
         except Exception:
             pass
 
-        # 约30fps刷新
-        if self._running:
-            self._root.after(33, self._update_loop)
+    def _update_loop(self):
+        """持续更新（约30fps）"""
+        if not self._active:
+            return
+        try:
+            self._draw_frame()
+        except Exception:
+            pass
+        self._job_id = self._parent.after(33, self._update_loop)
+
+    def _draw_frame(self):
+        """绘制虚线框并更新位置"""
+        import pyautogui
+        mx, my = pyautogui.position()
+
+        left = mx - self.width // 2
+        top = my - self.height // 2
+
+        self._win.geometry(f"{self.width + 6}x{self.height + 6}+{left - 3}+{top - 3}")
+        self._canvas.config(width=self.width + 6, height=self.height + 6)
+
+        self._canvas.delete("all")
+        self._dash_offset = (self._dash_offset + 1) % 12
+
+        # 虚线矩形
+        self._canvas.create_rectangle(
+            3, 3, self.width + 3, self.height + 3,
+            outline='#00ff00', width=2,
+            dash=(8, 4), dashoffset=self._dash_offset,
+        )
+        # 四角标记
+        s = 12
+        corners = [(3, 3), (self.width + 3, 3),
+                   (3, self.height + 3), (self.width + 3, self.height + 3)]
+        for cx, cy in corners:
+            self._canvas.create_line(cx, cy - s, cx, cy + s, fill='#00ff00', width=1)
+            self._canvas.create_line(cx - s, cy, cx + s, cy, fill='#00ff00', width=1)
+
+        self._win.update_idletasks()
 
 
 def get_mouse_center_region(width: int, height: int) -> dict:

@@ -20,22 +20,29 @@ CONFIG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.j
 class SettingsApp:
     """主设置窗口"""
 
-    def __init__(self, on_start=None, on_stop=None, on_update_config=None):
+    def __init__(self, on_start=None, on_stop=None, on_update_config=None,
+                 on_overlay_start=None, on_overlay_stop=None, on_overlay_resize=None):
         """
         Args:
             on_start: 开始监控的回调
             on_stop: 停止监控的回调
             on_update_config: 配置变更时回调（传入config dict）
+            on_overlay_start: 启动虚线框回调
+            on_overlay_stop: 停止虚线框回调
+            on_overlay_resize: 调整虚线框大小回调(w, h)
         """
         self._on_start = on_start
         self._on_stop = on_stop
         self._on_update_config = on_update_config
+        self._on_overlay_start = on_overlay_start
+        self._on_overlay_stop = on_overlay_stop
+        self._on_overlay_resize = on_overlay_resize
         self._monitoring = False
         self._log_buffer = []
 
         self.root = ctk.CTk()
         self.root.title("游戏私聊AI助手")
-        self.root.geometry("520x720")
+        self.root.geometry("520x760")
         self.root.resizable(False, False)
 
         self._build_ui()
@@ -124,11 +131,15 @@ class SettingsApp:
 
         ctk.CTkLabel(grid, text="宽度:").grid(row=0, column=2, sticky="e", padx=2, pady=2)
         self.width_var = ctk.StringVar(value="600")
-        self._mk_entry(grid, textvariable=self.width_var, width=70).grid(row=0, column=3, padx=2, pady=2)
+        self.width_entry = self._mk_entry(grid, textvariable=self.width_var, width=70)
+        self.width_entry.grid(row=0, column=3, padx=2, pady=2)
+        self.width_entry.bind("<KeyRelease>", self._on_region_change)
 
         ctk.CTkLabel(grid, text="高度:").grid(row=1, column=2, sticky="e", padx=2, pady=2)
         self.height_var = ctk.StringVar(value="400")
-        self._mk_entry(grid, textvariable=self.height_var, width=70).grid(row=1, column=3, padx=2, pady=2)
+        self.height_entry = self._mk_entry(grid, textvariable=self.height_var, width=70)
+        self.height_entry.grid(row=1, column=3, padx=2, pady=2)
+        self.height_entry.bind("<KeyRelease>", self._on_region_change)
 
         ctk.CTkLabel(region_frame,
                      text="💡 将游戏窗口化，用鼠标悬停在聊天区域左上角和右下角查看坐标（可用截图工具辅助）",
@@ -196,8 +207,23 @@ class SettingsApp:
         self.log_text.pack(fill="both", expand=True, padx=10, pady=5)
 
     def _on_mouse_track_toggle(self):
-        """鼠标追踪开关切换"""
-        pass  # 不需要额外逻辑，get_config/save_config 会读取状态
+        """鼠标追踪开关切换 — 立即启动/停止虚线框"""
+        if self.mouse_track_var.get():
+            if self._on_overlay_start:
+                self._on_overlay_start()
+        else:
+            if self._on_overlay_stop:
+                self._on_overlay_stop()
+
+    def _on_region_change(self, event=None):
+        """截图区域尺寸变化 — 即时刷新虚线框大小"""
+        if self.mouse_track_var.get() and self._on_overlay_resize:
+            try:
+                w = int(self.width_var.get() or 600)
+                h = int(self.height_var.get() or 400)
+                self._on_overlay_resize(w, h)
+            except ValueError:
+                pass
 
     def _toggle_key_visibility(self):
         """切换API Key显示/隐藏"""

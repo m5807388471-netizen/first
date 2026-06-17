@@ -105,6 +105,34 @@ class AppController:
             )
             self.monitor.set_interval(interval)
 
+    # --- 虚线框控制（独立于监控） ---
+
+    def _start_overlay(self):
+        """启动虚线框（勾选鼠标追踪时调用）"""
+        try:
+            w = int(self.ui.width_var.get() or 600)
+            h = int(self.ui.height_var.get() or 400)
+        except ValueError:
+            w, h = 600, 400
+        if not self.overlay:
+            self.overlay = CaptureOverlay(self.ui.root, w, h)
+        self.overlay.start()
+        self.ui.log_from_thread(f"虚线框已显示（{w}x{h}，跟随鼠标）")
+
+    def _stop_overlay(self):
+        """停止虚线框"""
+        if self.overlay:
+            self.overlay.stop()
+            self.overlay = None
+            self.ui.log_from_thread("虚线框已隐藏")
+
+    def _resize_overlay(self, w: int, h: int):
+        """调整虚线框大小"""
+        if self.overlay:
+            self.overlay.set_size(w, h)
+
+    # --- 监控控制 ---
+
     def start_monitoring(self):
         """开始监控"""
         config = self.ui.get_config()
@@ -153,40 +181,36 @@ class AppController:
             ai_func=lambda msg: self.ai_client.chat(msg) if self.ai_client else None,
         )
 
-        # 启动鼠标追踪虚线框
-        if mouse_track:
-            self.overlay = CaptureOverlay(w, h)
-            self.overlay.start()
-            self.ui.log_from_thread(f"虚线框已显示（{w}x{h}，跟随鼠标）")
-        else:
-            self.overlay = None
-
         logger.info("监控已启动")
 
     def stop_monitoring(self):
-        """停止监控"""
+        """停止监控（虚线框保持不动）"""
         if self.monitor:
             self.monitor.stop()
             self.monitor = None
-        if self.overlay:
-            self.overlay.stop()
-            self.overlay = None
 
     def run(self):
         """启动应用"""
         # 预加载配置
         self.load_config()
 
-        # 创建UI
+        # 创建UI（传入虚线框回调）
         self.ui = SettingsApp(
             on_start=self.start_monitoring,
             on_stop=self.stop_monitoring,
             on_update_config=self.apply_config,
+            on_overlay_start=self._start_overlay,
+            on_overlay_stop=self._stop_overlay,
+            on_overlay_resize=self._resize_overlay,
         )
 
         # 如果有已保存的API key和人设，预初始化AI客户端
         if self._config:
             self.apply_config(self._config)
+
+        # 如果上次开启了鼠标追踪，启动时自动显示虚线框
+        if self._config.get("monitor", {}).get("mouse_tracking", False):
+            self._start_overlay()
 
         # 进入GUI主循环
         self.ui.run()
