@@ -35,7 +35,7 @@ class SettingsApp:
 
         self.root = ctk.CTk()
         self.root.title("游戏私聊AI助手")
-        self.root.geometry("520x680")
+        self.root.geometry("520x720")
         self.root.resizable(False, False)
 
         self._build_ui()
@@ -75,6 +75,12 @@ class SettingsApp:
         self.char_name_var = ctk.StringVar()
         ctk.CTkEntry(persona_frame, textvariable=self.char_name_var,
                       placeholder_text="例如：赫敏·格兰杰", width=400).pack(padx=10, pady=(0, 5))
+
+        ctk.CTkLabel(persona_frame, text="出自作品（选填）").pack(anchor="w", padx=10)
+        self.char_source_var = ctk.StringVar()
+        ctk.CTkEntry(persona_frame, textvariable=self.char_source_var,
+                      placeholder_text="例如：哈利波特、原神、英雄联盟... 填入后自动搜索角色语气",
+                      width=400).pack(padx=10, pady=(0, 5))
 
         ctk.CTkLabel(persona_frame, text="性格描述").pack(anchor="w", padx=10)
         self.char_personality_var = ctk.StringVar()
@@ -213,6 +219,7 @@ class SettingsApp:
 
                 char = cfg.get("character", {})
                 self.char_name_var.set(char.get("name", ""))
+                self.char_source_var.set(char.get("source_work", ""))
                 self.char_personality_var.set(char.get("personality", ""))
                 self.char_style_var.set(char.get("speaking_style", ""))
 
@@ -235,6 +242,7 @@ class SettingsApp:
                 "deepseek_api_key": self.api_key_var.get().strip(),
                 "character": {
                     "name": self.char_name_var.get().strip(),
+                    "source_work": self.char_source_var.get().strip(),
                     "personality": self.char_personality_var.get().strip(),
                     "speaking_style": self.char_style_var.get().strip(),
                 },
@@ -287,6 +295,7 @@ class SettingsApp:
                 "deepseek_api_key": self.api_key_var.get().strip(),
                 "character": {
                     "name": self.char_name_var.get().strip(),
+                    "source_work": self.char_source_var.get().strip(),
                     "personality": self.char_personality_var.get().strip(),
                     "speaking_style": self.char_style_var.get().strip(),
                 },

@@ -18,19 +18,40 @@ class AIClient:
         # 对话历史（保留最近N轮，用于上下文连贯）
         self.history: List[Dict[str, str]] = []
 
-    def set_persona(self, name: str, personality: str, speaking_style: str):
+    def set_persona(
+        self,
+        name: str,
+        personality: str,
+        speaking_style: str,
+        source_work: str = "",
+        researched_style: str = "",
+    ):
         """设置角色人设，构建系统prompt。"""
-        system_prompt = (
-            f"你现在扮演一个名叫「{name}」的角色。\n"
-            f"性格特点：{personality}\n"
-            f"说话风格：{speaking_style}\n\n"
-            f"规则：\n"
-            f"1. 始终保持角色，不要表现出你是AI\n"
-            f"2. 回复要简短自然，像真人聊天一样，不要长篇大论\n"
-            f"3. 只输出回复内容，不要加任何解释、前缀或后缀\n"
-            f"4. 如果消息是打招呼或闲聊，自然地回应\n"
-            f"5. 绝对不要提及你是AI、机器人或任何非人类身份"
-        )
+        # 基础人设
+        parts = []
+        parts.append(f"你现在扮演一个名叫「{name}」的角色。")
+
+        if source_work:
+            parts.append(f"这个角色出自《{source_work}》。")
+
+        if personality:
+            parts.append(f"性格特点：{personality}")
+
+        # 如果搜索到了角色的语气风格，优先使用
+        if researched_style:
+            parts.append(f"以下是你说话风格的详细描述，请严格遵循：\n{researched_style}")
+        elif speaking_style:
+            parts.append(f"说话风格：{speaking_style}")
+
+        parts.append("")
+        parts.append("规则：")
+        parts.append("1. 始终保持角色，不要表现出你是AI")
+        parts.append("2. 回复要简短自然，像真人聊天一样，不要长篇大论")
+        parts.append("3. 只输出回复内容，不要加任何解释、前缀或后缀")
+        parts.append("4. 如果消息是打招呼或闲聊，自然地回应")
+        parts.append("5. 绝对不要提及你是AI、机器人或任何非人类身份")
+
+        system_prompt = "\n".join(parts)
         # 重置历史，只保留新的系统设定
         self.history = [{"role": "system", "content": system_prompt}]
 

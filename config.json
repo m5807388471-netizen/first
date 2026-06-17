@@ -2,8 +2,10 @@
   "deepseek_api_key": "",
   "character": {
     "name": "",
+    "source_work": "",
     "personality": "",
-    "speaking_style": ""
+    "speaking_style": "",
+    "researched_style": ""
   },
   "monitor": {
     "region": {

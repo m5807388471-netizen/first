@@ -10,6 +10,7 @@ from src.ocr_engine import recognize_text
 from src.ai_client import AIClient
 from src.monitor import ScreenMonitor
 from src.responder import paste_reply
+from src.character_research import research_character
 from src.settings_ui import SettingsApp, CONFIG_PATH
 
 # 配置日志
@@ -56,10 +57,25 @@ class AppController:
         char = config.get("character", {})
         if api_key and char.get("name"):
             self.ai_client = AIClient(api_key)
+
+            source_work = char.get("source_work", "")
+            researched_style = ""
+
+            # 如果填了出自作品，搜索角色语气
+            if source_work:
+                self.ui.log_from_thread(f"正在搜索《{source_work}》中 {char['name']} 的语气风格...")
+                researched_style = research_character(api_key, char["name"], source_work)
+                if researched_style:
+                    self.ui.log_from_thread(f"角色语气研究完成（{len(researched_style)}字）")
+                else:
+                    self.ui.log_from_thread("角色搜索失败，使用基础人设")
+
             self.ai_client.set_persona(
                 name=char.get("name", ""),
                 personality=char.get("personality", ""),
                 speaking_style=char.get("speaking_style", ""),
+                source_work=source_work,
+                researched_style=researched_style,
             )
             logger.info(f"人设已更新: {char.get('name')}")
 
