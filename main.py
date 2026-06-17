@@ -6,6 +6,7 @@ import sys
 import os
 import json
 import logging
+from tkinter import messagebox
 from src.ocr_engine import recognize_text
 from src.ai_client import AIClient
 from src.monitor import ScreenMonitor
@@ -69,6 +70,17 @@ class AppController:
                     self.ui.log_from_thread(f"角色语气研究完成（{len(researched_style)}字）")
                 else:
                     self.ui.log_from_thread("角色搜索失败，使用基础人设")
+                    # 弹窗提醒用户完善手动设定
+                    self.ui.root.after(0, lambda: messagebox.showwarning(
+                        "角色搜索失败",
+                        f"未能获取《{source_work}》中「{char['name']}」的语气信息。\n\n"
+                        f"请检查：\n"
+                        f"  1. 角色名称和作品名称是否正确\n"
+                        f"  2. 网络连接是否正常\n"
+                        f"  3. API Key 余额是否充足\n\n"
+                        f"建议：请手动完善下方的「性格描述」和「说话风格」字段，\n"
+                        f"以确保角色扮演效果。"
+                    ))
 
             self.ai_client.set_persona(
                 name=char.get("name", ""),
