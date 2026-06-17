@@ -41,6 +41,16 @@ class SettingsApp:
         self._build_ui()
         self._load_config()
 
+    def _mk_entry(self, parent, textvariable, placeholder="", width=400, show="", **kwargs):
+        """创建带剪贴板支持的输入框"""
+        entry = ctk.CTkEntry(parent, textvariable=textvariable,
+                             placeholder_text=placeholder, width=width, show=show, **kwargs)
+        entry.bind("<Control-c>", lambda e: entry.event_generate("<<Copy>>"))
+        entry.bind("<Control-v>", lambda e: entry.event_generate("<<Paste>>"))
+        entry.bind("<Control-x>", lambda e: entry.event_generate("<<Cut>>"))
+        entry.bind("<Control-a>", lambda e: (entry.select_range(0, "end"), "break"))
+        return entry
+
     def _build_ui(self):
         """构建界面"""
         # === API Key 区域 ===
@@ -54,9 +64,9 @@ class SettingsApp:
         key_row.pack(fill="x", padx=10, pady=5)
 
         self.api_key_var = ctk.StringVar()
-        self.api_key_entry = ctk.CTkEntry(key_row, textvariable=self.api_key_var,
-                                           placeholder_text="sk-xxxxxxxxxxxxxxxx",
-                                           show="*", width=350)
+        self.api_key_entry = self._mk_entry(key_row, textvariable=self.api_key_var,
+                                            placeholder_text="sk-xxxxxxxxxxxxxxxx",
+                                            show="*", width=350)
         self.api_key_entry.pack(side="left")
 
         self.show_key_var = ctk.BooleanVar(value=False)
@@ -73,24 +83,24 @@ class SettingsApp:
 
         ctk.CTkLabel(persona_frame, text="角色名称").pack(anchor="w", padx=10)
         self.char_name_var = ctk.StringVar()
-        ctk.CTkEntry(persona_frame, textvariable=self.char_name_var,
+        self._mk_entry(persona_frame, textvariable=self.char_name_var,
                       placeholder_text="例如：赫敏·格兰杰", width=400).pack(padx=10, pady=(0, 5))
 
         ctk.CTkLabel(persona_frame, text="出自作品（选填）").pack(anchor="w", padx=10)
         self.char_source_var = ctk.StringVar()
-        ctk.CTkEntry(persona_frame, textvariable=self.char_source_var,
+        self._mk_entry(persona_frame, textvariable=self.char_source_var,
                       placeholder_text="例如：哈利波特、原神、英雄联盟... 填入后自动搜索角色语气",
                       width=400).pack(padx=10, pady=(0, 5))
 
         ctk.CTkLabel(persona_frame, text="性格描述").pack(anchor="w", padx=10)
         self.char_personality_var = ctk.StringVar()
-        ctk.CTkEntry(persona_frame, textvariable=self.char_personality_var,
+        self._mk_entry(persona_frame, textvariable=self.char_personality_var,
                       placeholder_text="例如：聪明、好学、有些急躁但心地善良",
                       width=400).pack(padx=10, pady=(0, 5))
 
         ctk.CTkLabel(persona_frame, text="说话风格").pack(anchor="w", padx=10)
         self.char_style_var = ctk.StringVar()
-        ctk.CTkEntry(persona_frame, textvariable=self.char_style_var,
+        self._mk_entry(persona_frame, textvariable=self.char_style_var,
                       placeholder_text="例如：偶尔引用书本知识，喜欢说'居然连这个都不知道'",
                       width=400).pack(padx=10, pady=(0, 10))
 
@@ -106,19 +116,19 @@ class SettingsApp:
 
         ctk.CTkLabel(grid, text="左边界:").grid(row=0, column=0, sticky="e", padx=2, pady=2)
         self.left_var = ctk.StringVar(value="100")
-        ctk.CTkEntry(grid, textvariable=self.left_var, width=70).grid(row=0, column=1, padx=2, pady=2)
+        self._mk_entry(grid, textvariable=self.left_var, width=70).grid(row=0, column=1, padx=2, pady=2)
 
         ctk.CTkLabel(grid, text="上边界:").grid(row=1, column=0, sticky="e", padx=2, pady=2)
         self.top_var = ctk.StringVar(value="100")
-        ctk.CTkEntry(grid, textvariable=self.top_var, width=70).grid(row=1, column=1, padx=2, pady=2)
+        self._mk_entry(grid, textvariable=self.top_var, width=70).grid(row=1, column=1, padx=2, pady=2)
 
         ctk.CTkLabel(grid, text="宽度:").grid(row=0, column=2, sticky="e", padx=2, pady=2)
         self.width_var = ctk.StringVar(value="400")
-        ctk.CTkEntry(grid, textvariable=self.width_var, width=70).grid(row=0, column=3, padx=2, pady=2)
+        self._mk_entry(grid, textvariable=self.width_var, width=70).grid(row=0, column=3, padx=2, pady=2)
 
         ctk.CTkLabel(grid, text="高度:").grid(row=1, column=2, sticky="e", padx=2, pady=2)
         self.height_var = ctk.StringVar(value="300")
-        ctk.CTkEntry(grid, textvariable=self.height_var, width=70).grid(row=1, column=3, padx=2, pady=2)
+        self._mk_entry(grid, textvariable=self.height_var, width=70).grid(row=1, column=3, padx=2, pady=2)
 
         ctk.CTkLabel(region_frame,
                      text="💡 将游戏窗口化，用鼠标悬停在聊天区域左上角和右下角查看坐标（可用截图工具辅助）",
@@ -136,7 +146,7 @@ class SettingsApp:
 
         ctk.CTkLabel(interval_row, text="检测间隔(秒):").pack(side="left")
         self.interval_var = ctk.StringVar(value="2")
-        ctk.CTkEntry(interval_row, textvariable=self.interval_var, width=60).pack(side="left", padx=5)
+        self._mk_entry(interval_row, textvariable=self.interval_var, width=60).pack(side="left", padx=5)
 
         # === 控制按钮 ===
         btn_frame = ctk.CTkFrame(self.root, fg_color="transparent")
