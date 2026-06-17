@@ -22,6 +22,7 @@ class ScreenMonitor:
         """
         self.region = region
         self.interval = 2.0  # 默认2秒检测一次
+        self._mouse_tracking = False
         self._running = False
         self._thread: Optional[threading.Thread] = None
         self._previous_text: str = ""
@@ -40,10 +41,21 @@ class ScreenMonitor:
         """设置轮询间隔（秒）"""
         self.interval = max(0.5, seconds)
 
+    def set_mouse_tracking(self, enabled: bool):
+        """启用/禁用鼠标追踪（截图区域以鼠标为中心）"""
+        self._mouse_tracking = enabled
+
     def capture(self) -> Optional[np.ndarray]:
         """截取指定区域的屏幕图像，返回numpy数组(BGR格式)"""
         try:
-            screenshot = self._sct.grab(self.region)
+            if self._mouse_tracking:
+                # 动态计算鼠标中心区域
+                from .overlay import get_mouse_center_region
+                region = get_mouse_center_region(self.region["width"], self.region["height"])
+            else:
+                region = self.region
+
+            screenshot = self._sct.grab(region)
             # mss返回BGRA，转BGR
             img = np.array(screenshot)
             return img[:, :, :3]  # 去掉alpha通道

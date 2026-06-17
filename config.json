@@ -1,24 +1,18 @@
 {
-  "deepseek_api_key": "",
+  "deepseek_api_key": "sk-2d38fbdab88c4fef823527ab02aeb33b",
   "character": {
-    "name": "",
-    "source_work": "",
+    "name": "山田凉",
+    "source_work": "孤独摇滚",
     "personality": "",
-    "speaking_style": "",
-    "researched_style": ""
+    "speaking_style": ""
   },
   "monitor": {
     "region": {
-      "left": 100,
-      "top": 100,
+      "left": 1000,
+      "top": 1000,
       "width": 400,
       "height": 300
     },
-    "interval_seconds": 2
-  },
-  "response": {
-    "delay_seconds": 1.0,
-    "max_context_messages": 5
-  },
-  "enabled": false
+    "interval_seconds": 2.0
+  }
 }

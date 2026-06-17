@@ -148,6 +148,15 @@ class SettingsApp:
         self.interval_var = ctk.StringVar(value="2")
         self._mk_entry(interval_row, textvariable=self.interval_var, width=60).pack(side="left", padx=5)
 
+        # 鼠标追踪开关
+        track_row = ctk.CTkFrame(monitor_frame, fg_color="transparent")
+        track_row.pack(fill="x", padx=10, pady=(0, 5))
+        self.mouse_track_var = ctk.BooleanVar(value=False)
+        ctk.CTkCheckBox(track_row, text="鼠标追踪模式（虚线框跟随鼠标，截图以鼠标为中心）",
+                        variable=self.mouse_track_var,
+                        command=self._on_mouse_track_toggle,
+                        width=50).pack(side="left")
+
         # === 控制按钮 ===
         btn_frame = ctk.CTkFrame(self.root, fg_color="transparent")
         btn_frame.pack(fill="x", padx=10, pady=10)
@@ -177,6 +186,10 @@ class SettingsApp:
         self.log_text = ctk.CTkTextbox(log_frame, width=460, height=150,
                                         font=ctk.CTkFont(size=11))
         self.log_text.pack(fill="both", expand=True, padx=10, pady=5)
+
+    def _on_mouse_track_toggle(self):
+        """鼠标追踪开关切换"""
+        pass  # 不需要额外逻辑，get_config/save_config 会读取状态
 
     def _toggle_key_visibility(self):
         """切换API Key显示/隐藏"""
@@ -240,6 +253,7 @@ class SettingsApp:
                 self.height_var.set(str(region.get("height", 300)))
 
                 self.interval_var.set(str(cfg.get("monitor", {}).get("interval_seconds", 2)))
+                self.mouse_track_var.set(cfg.get("monitor", {}).get("mouse_tracking", False))
 
                 self._log("配置已加载")
         except Exception as e:
@@ -264,6 +278,7 @@ class SettingsApp:
                         "height": int(self.height_var.get() or 300),
                     },
                     "interval_seconds": float(self.interval_var.get() or 2),
+                    "mouse_tracking": self.mouse_track_var.get(),
                 },
             }
             with open(CONFIG_PATH, "w", encoding="utf-8") as f:
@@ -317,6 +332,7 @@ class SettingsApp:
                         "height": int(self.height_var.get() or 300),
                     },
                     "interval_seconds": float(self.interval_var.get() or 2),
+                    "mouse_tracking": self.mouse_track_var.get(),
                 },
             }
         except (ValueError, TypeError):

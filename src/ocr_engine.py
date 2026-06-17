@@ -1,6 +1,6 @@
 """
-OCR引擎 — 使用PaddleOCR识别截图中的中文文字。
-PaddleOCR首次加载会下载模型，请保持网络畅通。
+OCR引擎 — 使用EasyOCR识别截图中的中文文字。
+首次加载会自动下载模型，请保持网络畅通。
 """
 import logging
 from typing import Optional
@@ -8,24 +8,24 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 # 全局单例，避免重复加载模型
-_ocr_instance: Optional[object] = None
+_ocr_reader: Optional[object] = None
 
 
-def get_ocr():
-    """获取OCR实例（懒加载单例）"""
-    global _ocr_instance
-    if _ocr_instance is None:
-        logger.info("正在加载PaddleOCR模型（首次可能较慢，请耐心等待）...")
+def get_reader():
+    """获取EasyOCR Reader实例（懒加载单例）"""
+    global _ocr_reader
+    if _ocr_reader is None:
+        logger.info("正在加载EasyOCR中文模型（首次较慢，约30秒-1分钟）...")
         try:
-            from paddleocr import PaddleOCR
-            # cls=True 开启方向分类，处理竖排/倒置文字
-            # lang='ch' 中文模型
-            _ocr_instance = PaddleOCR(lang='ch', use_angle_cls=True, show_log=False)
-            logger.info("PaddleOCR模型加载完成")
+            import easyocr
+            # ['ch_sim', 'en'] = 简体中文 + 英文
+            # gpu=False 使用CPU（兼容性最好）
+            _ocr_reader = easyocr.Reader(['ch_sim', 'en'], gpu=False, verbose=False)
+            logger.info("EasyOCR模型加载完成")
         except ImportError:
-            logger.error("PaddleOCR未安装，请运行: pip install paddleocr paddlepaddle")
+            logger.error("EasyOCR未安装，请运行: pip install easyocr")
             raise
-    return _ocr_instance
+    return _ocr_reader
 
 
 def recognize_text(image) -> str:
@@ -42,28 +42,26 @@ def recognize_text(image) -> str:
         return ""
 
     try:
-        ocr = get_ocr()
-        # 转换为numpy数组（如果是PIL Image）
+        reader = get_reader()
+
+        # 转换为RGB numpy数组（EasyOCR需要RGB）
         import numpy as np
         if hasattr(image, 'convert'):
-            # PIL Image → numpy
             image = np.array(image.convert('RGB'))
-            # RGB → BGR (PaddleOCR期望BGR)
+        elif len(image.shape) == 3 and image.shape[2] == 3:
+            # 假设是BGR，转RGB
             image = image[:, :, ::-1]
 
-        results = ocr.ocr(image, cls=True)
+        results = reader.readtext(image)
 
-        if not results or not results[0]:
+        if not results:
             return ""
 
-        # 提取所有识别到的文字，按行拼接
+        # 提取文字，过滤低置信度
         lines = []
-        for line_info in results[0]:
-            if line_info and len(line_info) >= 2:
-                text = line_info[1][0]  # line_info[1][0] 是文字内容
-                confidence = line_info[1][1]  # line_info[1][1] 是置信度
-                if confidence > 0.5:  # 过滤低置信度结果
-                    lines.append(text)
+        for bbox, text, confidence in results:
+            if confidence > 0.4:
+                lines.append(text)
 
         return "\n".join(lines)
 

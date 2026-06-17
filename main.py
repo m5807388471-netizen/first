@@ -12,6 +12,7 @@ from src.ai_client import AIClient
 from src.monitor import ScreenMonitor
 from src.responder import paste_reply
 from src.character_research import research_character
+from src.overlay import CaptureOverlay
 from src.settings_ui import SettingsApp, CONFIG_PATH
 
 # 配置日志
@@ -35,6 +36,7 @@ class AppController:
     def __init__(self):
         self.ai_client: AIClient = None
         self.monitor: ScreenMonitor = None
+        self.overlay: CaptureOverlay = None
         self.ui: SettingsApp = None
         self._config: dict = {}
 
@@ -121,6 +123,7 @@ class AppController:
         # 创建监控器
         region = config.get("monitor", {}).get("region", {})
         interval = config.get("monitor", {}).get("interval_seconds", 2)
+        mouse_track = config.get("monitor", {}).get("mouse_tracking", False)
 
         self.monitor = ScreenMonitor({
             "left": region.get("left", 100),
@@ -129,6 +132,7 @@ class AppController:
             "height": region.get("height", 300),
         })
         self.monitor.set_interval(interval)
+        self.monitor.set_mouse_tracking(mouse_track)
 
         # 设置新消息回调：收到回复后粘贴
         self.monitor.set_callback(lambda reply: paste_reply(reply, delay_before=0.5))
@@ -139,6 +143,17 @@ class AppController:
             ai_func=lambda msg: self.ai_client.chat(msg) if self.ai_client else None,
         )
 
+        # 启动鼠标追踪虚线框
+        region = config.get("monitor", {}).get("region", {})
+        w = region.get("width", 400)
+        h = region.get("height", 300)
+        if mouse_track:
+            self.overlay = CaptureOverlay(w, h)
+            self.overlay.start()
+            self.ui.log_from_thread(f"虚线框已显示（{w}x{h}，跟随鼠标）")
+        else:
+            self.overlay = None
+
         logger.info("监控已启动")
 
     def stop_monitoring(self):
@@ -146,6 +161,9 @@ class AppController:
         if self.monitor:
             self.monitor.stop()
             self.monitor = None
+        if self.overlay:
+            self.overlay.stop()
+            self.overlay = None
 
     def run(self):
         """启动应用"""
