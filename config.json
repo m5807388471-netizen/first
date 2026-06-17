@@ -1,0 +1,22 @@
+{
+  "deepseek_api_key": "",
+  "character": {
+    "name": "",
+    "personality": "",
+    "speaking_style": ""
+  },
+  "monitor": {
+    "region": {
+      "left": 100,
+      "top": 100,
+      "width": 400,
+      "height": 300
+    },
+    "interval_seconds": 2
+  },
+  "response": {
+    "delay_seconds": 1.0,
+    "max_context_messages": 5
+  },
+  "enabled": false
+}
