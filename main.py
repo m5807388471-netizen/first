@@ -115,7 +115,7 @@ class AppController:
         except ValueError:
             w, h = 600, 400
         if not self.overlay:
-            self.overlay = CaptureOverlay(self.ui.root, w, h)
+            self.overlay = CaptureOverlay(width=w, height=h)
         self.overlay.start()
         self.ui.log_from_thread(f"虚线框已显示（{w}x{h}，跟随鼠标）")
 
