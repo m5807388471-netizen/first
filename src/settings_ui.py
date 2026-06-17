@@ -6,6 +6,7 @@ import os
 import logging
 import threading
 import customtkinter as ctk
+import tkinter as tk
 from tkinter import messagebox
 
 logger = logging.getLogger(__name__)
@@ -49,13 +50,34 @@ class SettingsApp:
         self._load_config()
 
     def _mk_entry(self, parent, textvariable, placeholder_text="", width=400, show="", **kwargs):
-        """创建带剪贴板支持的输入框"""
+        """创建带剪贴板支持+右键菜单的输入框"""
         entry = ctk.CTkEntry(parent, textvariable=textvariable,
                              placeholder_text=placeholder_text, width=width, show=show, **kwargs)
+
+        # 快捷键
         entry.bind("<Control-c>", lambda e: entry.event_generate("<<Copy>>"))
         entry.bind("<Control-v>", lambda e: entry.event_generate("<<Paste>>"))
         entry.bind("<Control-x>", lambda e: entry.event_generate("<<Cut>>"))
         entry.bind("<Control-a>", lambda e: (entry.select_range(0, "end"), "break"))
+
+        # 右键菜单
+        def _show_context_menu(event):
+            menu = tk.Menu(entry, tearoff=0)
+            menu.add_command(label="复制", command=lambda: entry.event_generate("<<Copy>>"))
+            menu.add_command(label="粘贴", command=lambda: entry.event_generate("<<Paste>>"))
+            menu.add_command(label="剪切", command=lambda: entry.event_generate("<<Cut>>"))
+            menu.add_separator()
+            menu.add_command(label="全选", command=lambda: (entry.select_range(0, "end"), entry.icursor("end")))
+            menu.add_command(label="删除", command=lambda: entry.delete(0, "end"))
+            try:
+                menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                menu.grab_release()
+
+        entry.bind("<Button-3>", _show_context_menu)
+        # Windows 键盘右键菜单键也支持
+        entry.bind("<Button-2>", _show_context_menu)
+
         return entry
 
     def _build_ui(self):

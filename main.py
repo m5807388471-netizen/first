@@ -114,9 +114,12 @@ class AppController:
             h = int(self.ui.height_var.get() or 400)
         except ValueError:
             w, h = 600, 400
-        if not self.overlay:
-            self.overlay = CaptureOverlay(width=w, height=h)
-        self.overlay.start()
+        if self.overlay:
+            self.overlay.stop()
+        import threading
+        self.overlay = CaptureOverlay(width=w, height=h)
+        t = threading.Thread(target=self.overlay.start, daemon=True)
+        t.start()
         self.ui.log_from_thread(f"虚线框已显示（{w}x{h}，跟随鼠标）")
 
     def _stop_overlay(self):
