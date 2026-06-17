@@ -124,18 +124,28 @@ class AppController:
         region = config.get("monitor", {}).get("region", {})
         interval = config.get("monitor", {}).get("interval_seconds", 2)
         mouse_track = config.get("monitor", {}).get("mouse_tracking", False)
+        w = region.get("width", 600)
+        h = region.get("height", 400)
 
         self.monitor = ScreenMonitor({
             "left": region.get("left", 100),
             "top": region.get("top", 100),
-            "width": region.get("width", 400),
-            "height": region.get("height", 300),
+            "width": w,
+            "height": h,
         })
         self.monitor.set_interval(interval)
         self.monitor.set_mouse_tracking(mouse_track)
 
-        # 设置新消息回调：收到回复后粘贴
-        self.monitor.set_callback(lambda reply: paste_reply(reply, delay_before=0.5))
+        # 显示OCR加载进度
+        self.ui.show_ocr_loading()
+
+        # 设置新消息回调：收到回复后粘贴（鼠标追踪模式自动点击聚焦）
+        self.monitor.set_callback(
+            lambda reply: paste_reply(reply, delay_before=0.5, click_to_focus=mouse_track)
+        )
+
+        # OCR就绪时隐藏进度条
+        self.monitor.set_ready_callback(lambda: self.ui.hide_ocr_loading())
 
         # 启动监控线程
         self.monitor.start(
@@ -144,9 +154,6 @@ class AppController:
         )
 
         # 启动鼠标追踪虚线框
-        region = config.get("monitor", {}).get("region", {})
-        w = region.get("width", 400)
-        h = region.get("height", 300)
         if mouse_track:
             self.overlay = CaptureOverlay(w, h)
             self.overlay.start()

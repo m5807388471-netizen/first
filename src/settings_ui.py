@@ -123,11 +123,11 @@ class SettingsApp:
         self._mk_entry(grid, textvariable=self.top_var, width=70).grid(row=1, column=1, padx=2, pady=2)
 
         ctk.CTkLabel(grid, text="宽度:").grid(row=0, column=2, sticky="e", padx=2, pady=2)
-        self.width_var = ctk.StringVar(value="400")
+        self.width_var = ctk.StringVar(value="600")
         self._mk_entry(grid, textvariable=self.width_var, width=70).grid(row=0, column=3, padx=2, pady=2)
 
         ctk.CTkLabel(grid, text="高度:").grid(row=1, column=2, sticky="e", padx=2, pady=2)
-        self.height_var = ctk.StringVar(value="300")
+        self.height_var = ctk.StringVar(value="400")
         self._mk_entry(grid, textvariable=self.height_var, width=70).grid(row=1, column=3, padx=2, pady=2)
 
         ctk.CTkLabel(region_frame,
@@ -156,6 +156,14 @@ class SettingsApp:
                         variable=self.mouse_track_var,
                         command=self._on_mouse_track_toggle,
                         width=50).pack(side="left")
+
+        # OCR加载状态
+        self.loading_frame = ctk.CTkFrame(monitor_frame, fg_color="transparent")
+        self.loading_label = ctk.CTkLabel(self.loading_frame, text="",
+                                           font=ctk.CTkFont(size=12),
+                                           text_color="#4fc3f7")
+        self.loading_label.pack(side="left", padx=5)
+        self.loading_bar = ctk.CTkProgressBar(self.loading_frame, width=200, mode="indeterminate")
 
         # === 控制按钮 ===
         btn_frame = ctk.CTkFrame(self.root, fg_color="transparent")
@@ -341,6 +349,22 @@ class SettingsApp:
     def log_from_thread(self, msg: str):
         """从其他线程安全地添加日志"""
         self.root.after(0, lambda: self._log(msg))
+
+    def show_ocr_loading(self):
+        """显示OCR加载进度条"""
+        self.root.after(0, lambda: (
+            self.loading_frame.pack(fill="x", padx=10, pady=(0, 5)),
+            self.loading_label.configure(text="⏳ 正在加载OCR模型，请稍候..."),
+            self.loading_bar.start()
+        ))
+
+    def hide_ocr_loading(self):
+        """隐藏OCR加载进度条"""
+        self.root.after(0, lambda: (
+            self.loading_bar.stop(),
+            self.loading_frame.pack_forget(),
+            self.loading_label.configure(text="")
+        ))
 
     def set_monitoring_state(self, active: bool):
         """从外部设置监控状态"""

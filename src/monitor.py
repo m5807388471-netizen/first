@@ -27,11 +27,16 @@ class ScreenMonitor:
         self._thread: Optional[threading.Thread] = None
         self._previous_text: str = ""
         self._on_new_message: Optional[Callable[[str], None]] = None
+        self._on_ready: Optional[Callable[[], None]] = None
         self._sct = mss.mss()
 
     def set_callback(self, callback: Callable[[str], None]):
         """设置新消息回调函数。参数为新消息文本。"""
         self._on_new_message = callback
+
+    def set_ready_callback(self, callback: Callable[[], None]):
+        """设置OCR就绪回调。"""
+        self._on_ready = callback
 
     def set_region(self, left, top, width, height):
         """动态更新截图区域"""
@@ -70,6 +75,10 @@ class ScreenMonitor:
         initial = self.capture()
         if initial is not None:
             self._previous_text = ocr_func(initial)
+
+        # 通知UI：OCR模型已就绪
+        if self._on_ready:
+            self._on_ready()
 
         while self._running:
             try:

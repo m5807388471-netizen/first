@@ -13,6 +13,7 @@
       "width": 400,
       "height": 300
     },
-    "interval_seconds": 2.0
+    "interval_seconds": 2.0,
+    "mouse_tracking": true
   }
 }

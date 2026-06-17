@@ -87,7 +87,7 @@ class AIClient:
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "deepseek-chat",
+                    "model": "deepseek-flash",
                     "messages": self.history,
                     "temperature": 0.8,  # 稍高温度让回复更自然
                     "max_tokens": 200,   # 限制长度，模拟真人聊天

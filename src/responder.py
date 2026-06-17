@@ -13,14 +13,16 @@ pyautogui.FAILSAFE = True
 pyautogui.PAUSE = 0.1  # 每个操作间暂停0.1秒
 
 
-def paste_reply(text: str, delay_before: float = 0.5, delay_after: float = 0.2):
+def paste_reply(text: str, delay_before: float = 0.5, delay_after: float = 0.2,
+                click_to_focus: bool = True):
     """
     将文本复制到剪贴板，然后模拟Ctrl+V粘贴。
 
     Args:
         text: 要粘贴的回复内容
-        delay_before: 粘贴前等待时间（秒），给用户时间切换到游戏窗口
+        delay_before: 粘贴前等待时间（秒）
         delay_after: 粘贴后等待时间
+        click_to_focus: 是否先点击鼠标当前位置以聚焦窗口
     """
     if not text:
         logger.warning("回复内容为空，跳过粘贴")
@@ -31,10 +33,17 @@ def paste_reply(text: str, delay_before: float = 0.5, delay_after: float = 0.2):
         pyperclip.copy(text)
         logger.info(f"已复制到剪贴板: {text[:50]}...")
 
-        # 2. 等待（用户需要确保游戏窗口在前台）
+        # 2. 点击当前鼠标位置聚焦窗口（鼠标追踪模式下鼠标在聊天框上）
+        if click_to_focus:
+            time.sleep(0.15)
+            pyautogui.click()
+            logger.info("已点击聚焦窗口")
+            time.sleep(0.15)
+
+        # 3. 等待
         time.sleep(delay_before)
 
-        # 3. 模拟Ctrl+V
+        # 4. 模拟Ctrl+V
         pyautogui.hotkey('ctrl', 'v')
         logger.info("已执行Ctrl+V粘贴")
 
